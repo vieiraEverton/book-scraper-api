@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -5,6 +8,7 @@ from api.config import settings
 from api.db import init_db, engine
 from api.routers import books, auth
 from api.services.user_service import UserService
+from api.tasks import scrape_and_store
 
 app = FastAPI(
     title="Book Scraper API",
@@ -24,6 +28,31 @@ app.add_middleware(
 
 app.include_router(books.router, prefix="/api/v1/books", tags=["Books"])
 app.include_router(auth.router)
+
+scheduler = BackgroundScheduler(timezone="America/Sao_Paulo")
+
+@app.on_event("startup")
+def start_scheduler():
+    scheduler.add_job(
+        scrape_and_store,
+        trigger="date",
+        run_date=datetime.now(),
+        id="initial_scrape",
+        replace_existing=True
+    )
+
+    scheduler.add_job(
+        scrape_and_store,
+        trigger="interval",
+        hours=1,
+        id="scrape_job",
+        replace_existing=True
+    )
+    scheduler.start()
+
+@app.on_event("shutdown")
+def shutdown_scheduler():
+    scheduler.shutdown()
 
 @app.on_event("startup")
 def on_startup():

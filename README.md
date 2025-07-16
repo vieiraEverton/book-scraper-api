@@ -44,6 +44,7 @@ A **Book Scraper API** é um serviço RESTful que fornece informações de livro
    ALGORITHM=HS256
    ACCESS_TOKEN_EXPIRE_MINUTES=30
    DATABASE_URL=sqlite:///./data/bookapi.db
+   ADMIN_PASSWORD=uma_senha_bem_dificil
    ```
 
 5. Execute a aplicação:
@@ -97,7 +98,7 @@ book-scraper-api/
    ```bash
    curl -X POST \
      http://127.0.0.1:8000/api/v1/auth/login \
-     -F "username=admin" -F "password=test123"
+     -F "username=admin" -F "password=uma_senha_bem_dificil"
    ```
 2. Copie o `access_token` e inclua no header das requisições protegidas:
 
