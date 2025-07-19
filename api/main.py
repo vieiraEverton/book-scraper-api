@@ -1,9 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import asyncio
 
 from api.config import settings
 from api.db import init_db, engine
@@ -36,7 +37,7 @@ def setup_scheduler():
     scheduler.add_job(
         scrape_and_store,
         trigger="date",
-        run_date=datetime.now(),
+        run_date=datetime.now() + timedelta(seconds=5),
         id="initial_scrape",
         replace_existing=True
     )
@@ -53,13 +54,17 @@ def setup_scheduler():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
+    print("Starting up...")
     setup_database()
     setup_scheduler()
     print("Setup Completed!")
-    yield
 
-    # Shutdown logic
-    scheduler.shutdown()
+    try:
+        yield
+    finally:
+        print("Shutting down...")
+        scheduler.shutdown(wait=False)
+        print("Scheduler stopped.")
 
 app = FastAPI(
     title="Book Scraper API",

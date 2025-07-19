@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: book-scraper-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - book_scrapper_app:/app:cached
+    env_file:
+      - .env
+    command: poetry run uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  book_scrapper_app:
