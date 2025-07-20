@@ -9,6 +9,15 @@ from scripts.scrape_books import list_categories, list_books_urls_by_category, f
 
 BASE_URL = "https://books.toscrape.com/"
 
+def perform_initial_scrape():
+    print(f"🚀 Performing Initial Scrapping...")
+    with Session(engine) as session:
+        category_service = CategoryService(session)
+        if len(category_service.list_categories()) > 0:
+            print("Skipped Initial Scrapping Since the data already exists!")
+            return
+    perform_scrape()
+
 def perform_scrape():
     categories = list_categories()
 

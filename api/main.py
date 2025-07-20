@@ -7,14 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import settings
 from api.db import init_db, engine
-from api.routers import books, auth, categories
+from api.routers import books, auth, categories, scraping
 from api.services.user_service import UserService
-from api.tasks import perform_scrape
+from api.tasks import perform_scrape, perform_initial_scrape
 
 scheduler = BackgroundScheduler(timezone="America/Sao_Paulo")
 
 def setup_database():
-    print("Seeting Up Database...")
+    print("Setting Up Database...")
 
     # 1) create tables
     init_db()
@@ -32,11 +32,11 @@ def setup_database():
             print("Admin user created with username='admin' and password=", default_password)
 
 def setup_scheduler():
-    print("Seeting Up Scheduler...")
+    print("Setting Up Scheduler...")
     scheduler.add_job(
-        perform_scrape,
+        perform_initial_scrape,
         trigger="date",
-        run_date=datetime.now() + timedelta(seconds=5),
+        run_date=datetime.now() + timedelta(seconds=5),  # This extra seconds was necessary in order to run it on docker
         id="initial_scrape",
         replace_existing=True
     )
@@ -83,6 +83,7 @@ app.add_middleware(
 
 app.include_router(books.router, prefix="/api/v1/books", tags=["Books"])
 app.include_router(categories.router, prefix="/api/v1/categories", tags=["Categories"])
+app.include_router(scraping.router, prefix="/api/v1/scraping", tags=["Scraping"])
 app.include_router(auth.router)
 
 # --- Healthcheck ---
