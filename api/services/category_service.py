@@ -1,5 +1,9 @@
+from fastapi import Depends
 from sqlmodel import Session, select
+
+from api.db import get_session
 from api.models.category import Category
+
 
 class CategoryService:
     def __init__(self, session: Session):
@@ -26,3 +30,6 @@ class CategoryService:
     def list_categories(self) -> list[Category]:
         statement = select(Category)
         return self.session.exec(statement).all()
+
+def get_category_service(session: Session = Depends(get_session)) -> CategoryService:
+    return CategoryService(session)

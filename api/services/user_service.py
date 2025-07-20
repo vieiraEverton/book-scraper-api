@@ -1,6 +1,10 @@
+from fastapi import Depends
 from sqlmodel import Session, select
+
+from api.db import get_session
 from api.models.user import User
 from api.security import get_password_hash, verify_password
+
 
 class UserService:
     def __init__(self, session: Session):
@@ -25,3 +29,5 @@ class UserService:
         stmt = select(User).where(User.username == username)
         return self.session.exec(stmt).first()
 
+def get_user_service(session: Session = Depends(get_session)) -> UserService:
+    return UserService(session)

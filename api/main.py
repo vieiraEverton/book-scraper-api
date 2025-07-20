@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import settings
 from api.db import init_db, engine
-from api.routers import books, auth
+from api.routers import books, auth, categories
 from api.services.user_service import UserService
 from api.tasks import perform_scrape
 
@@ -82,6 +82,7 @@ app.add_middleware(
 )
 
 app.include_router(books.router, prefix="/api/v1/books", tags=["Books"])
+app.include_router(categories.router, prefix="/api/v1/categories", tags=["Categories"])
 app.include_router(auth.router)
 
 # --- Healthcheck ---

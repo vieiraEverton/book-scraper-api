@@ -1,5 +1,11 @@
-from sqlmodel import Session, select
+from typing import Optional
+
+from fastapi import Depends
+from sqlmodel import Session, select, and_, func
+
+from api.db import get_session
 from api.models.book import Book
+
 
 class BookService:
     def __init__(self, session: Session):
@@ -26,3 +32,22 @@ class BookService:
     def list_books(self) -> list[Book]:
         statement = select(Book)
         return self.session.exec(statement).all()
+
+    def search_books(self,
+                     title: Optional[str] = None,
+                     category: Optional[str] = None) -> list[Book]:
+        stmt = select(Book)
+
+        filters = []
+        if title:
+            filters.append(func.lower(Book.title).like(f"%{title.lower()}%"))
+        if category:
+            filters.append(func.lower(Book.category).like(f"%{category.lower()}%"))
+
+        if filters:
+            stmt = stmt.where(and_(*filters))
+
+        return self.session.exec(stmt).all()
+
+def get_book_service(session: Session = Depends(get_session)) -> BookService:
+    return BookService(session)
