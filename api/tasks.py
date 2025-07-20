@@ -4,6 +4,7 @@ from sqlmodel import Session
 
 from api.db import engine
 from api.services.book_service import BookService
+from api.services.category_service import CategoryService
 from scripts.scrape_books import list_categories, list_books_urls_by_category, fetch_book
 
 BASE_URL = "https://books.toscrape.com/"
@@ -13,9 +14,16 @@ def perform_scrape():
 
     with Session(engine) as session:
         book_service = BookService(session)
+        category_service = CategoryService(session)
         for category in categories:
             print(f"📂 Categoria: {category['name']}")
 
+            # Save the category
+            category_service.create_category(**{
+                'name': category['name']
+            })
+
+            # Retrieve the books in parallel
             with ThreadPoolExecutor(max_workers=20) as executor:
                 futures = {executor.submit(fetch_book, url): url for url in list_books_urls_by_category(category['link'])}
                 for future in as_completed(futures):
