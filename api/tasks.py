@@ -10,7 +10,7 @@ from scripts.scrape_books import list_categories, list_books_urls_by_category, f
 BASE_URL = "https://books.toscrape.com/"
 
 def perform_initial_scrape():
-    print(f"🚀 Performing Initial Scrapping...")
+    print("🚀 Performing Initial Scrapping...")
     with Session(engine) as session:
         category_service = CategoryService(session)
         if len(category_service.list_categories()) > 0:
@@ -24,6 +24,8 @@ def perform_scrape():
     with Session(engine) as session:
         book_service = BookService(session)
         category_service = CategoryService(session)
+
+        print("🚀 Atualizando Categorias...")
         for category in categories:
             print(f"📂 Categoria: {category['name']}")
 
@@ -32,13 +34,22 @@ def perform_scrape():
                 'name': category['name']
             })
 
-            # Retrieve the books in parallel
-            with ThreadPoolExecutor(max_workers=20) as executor:
-                futures = {executor.submit(fetch_book, url): url for url in list_books_urls_by_category(category['link'])}
-                for future in as_completed(futures):
-                    result = future.result()
+        print("🚀 Listando URLs dos livros...")
+        books_urls = []
+        with ThreadPoolExecutor(max_workers=30) as executor:
+            futures = {executor.submit(list_books_urls_by_category, category['link']): category for category in categories}
+            for future in as_completed(futures):
+                result = future.result()
+                books_urls.extend(result)
 
-                    book = book_service.create_book(**result)
-                    print(f"{'🔄 Atualizado' if book.id else '✔ Salvo'}: {result['title']}")
+        # Retrieve the books in parallel
+        print("🚀 Atualizando Livros...")
+        with ThreadPoolExecutor(max_workers=30) as executor:
+            futures = {executor.submit(fetch_book, url): url for url in books_urls}
+            for future in as_completed(futures):
+                result = future.result()
+
+                book = book_service.create_book(**result)
+                print(f"{'🔄 Atualizado' if book.id else '✔ Salvo'}: {result['title']}")
 
     print("✅ Job de scraping concluído.")

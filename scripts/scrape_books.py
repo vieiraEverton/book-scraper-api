@@ -32,6 +32,7 @@ def list_categories():
     return categories
 
 def list_books_urls_by_category(category_link: str):
+    books_urls = []
     page_url = category_link
     while True:
         soup = get_soup(page_url)
@@ -40,7 +41,7 @@ def list_books_urls_by_category(category_link: str):
 
         for tag in soup.select("article.product_pod"):
             book_url = urljoin(page_url, tag.h3.a["href"])
-            yield book_url
+            books_urls.append(book_url)
 
         # Find the "Next" button, if it is unavailable it is the last page
         next_btn = soup.select_one("li.next a")
@@ -50,6 +51,7 @@ def list_books_urls_by_category(category_link: str):
         # Get the next page URL
         page_url = urljoin(page_url, next_btn["href"])
         time.sleep(0.05)
+    return books_urls
 
 def fetch_book(book_url: str):
     soup = get_soup(book_url)
