@@ -1,16 +1,15 @@
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-import asyncio
 
 from api.config import settings
 from api.db import init_db, engine
 from api.routers import books, auth
 from api.services.user_service import UserService
-from api.tasks import scrape_and_store
+from api.tasks import perform_scrape
 
 scheduler = BackgroundScheduler(timezone="America/Sao_Paulo")
 
@@ -35,7 +34,7 @@ def setup_database():
 def setup_scheduler():
     print("Seeting Up Scheduler...")
     scheduler.add_job(
-        scrape_and_store,
+        perform_scrape,
         trigger="date",
         run_date=datetime.now() + timedelta(seconds=5),
         id="initial_scrape",
@@ -43,7 +42,7 @@ def setup_scheduler():
     )
 
     scheduler.add_job(
-        scrape_and_store,
+        perform_scrape,
         trigger="interval",
         hours=1,
         id="scrape_job",

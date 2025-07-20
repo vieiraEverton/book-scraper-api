@@ -1,48 +1,27 @@
-import time
-from urllib.parse import urljoin
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from sqlmodel import Session
 
-from api.db import engine, init_db
+from api.db import engine
 from api.services.book_service import BookService
-from scripts.scrape_books import parse_book_info, get_soup
+from scripts.scrape_books import list_categories, list_books_urls_by_category, fetch_book
 
 BASE_URL = "https://books.toscrape.com/"
 
-def scrape_and_store():
-    print("🔄 Iniciando job de scraping…")
-    init_db()
+def perform_scrape():
+    categories = list_categories()
+
     with Session(engine) as session:
-        service = BookService(session)
-        home = get_soup(BASE_URL)
-        if home is None:
-            print("⛔ Não foi possível acessar a homepage. Abortando job.")
-            return
+        book_service = BookService(session)
+        for category in categories:
+            print(f"📂 Categoria: {category['name']}")
 
-        categories = home.select("div.side_categories ul li ul li a")
-        for cat in categories:
-            cat_name = cat.text.strip()
-            page_url = urljoin(BASE_URL, cat["href"])
-            print(f"📂 Categoria: {cat_name}")
+            with ThreadPoolExecutor(max_workers=20) as executor:
+                futures = {executor.submit(fetch_book, url): url for url in list_books_urls_by_category(category['link'])}
+                for future in as_completed(futures):
+                    result = future.result()
 
-            while True:
-                soup = get_soup(page_url)
-                if not soup:
-                    break
-
-                for tag in soup.select("article.product_pod"):
-                    info = parse_book_info(tag, cat_name, page_url)
-                    if not info:
-                        continue
-                    book = service.create_book(**info)
-                    # se já existia, create_book retorna o existente
-                    print(f"{'🔄 Atualizado' if book.id else '✔ Salvo'}: {info['title']}")
-
-                # paginação usando urljoin
-                next_btn = soup.select_one("li.next a")
-                if not next_btn:
-                    break
-                page_url = urljoin(page_url, next_btn["href"])
-                time.sleep(1)
+                    book = book_service.create_book(**result)
+                    print(f"{'🔄 Atualizado' if book.id else '✔ Salvo'}: {result['title']}")
 
     print("✅ Job de scraping concluído.")
