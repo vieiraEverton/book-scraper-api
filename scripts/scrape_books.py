@@ -53,6 +53,28 @@ def list_books_urls_by_category(category_link: str):
         time.sleep(0.05)
     return books_urls
 
+def rating_str_to_num(rating_str: str):
+    match rating_str:
+        case "One":
+            return 1
+        case "Two":
+            return 2
+        case "Three":
+            return 3
+        case "Four":
+            return 4
+        case "Five":
+            return 5
+    return 0
+
+def parse_price(price_str: str) -> float:
+    try:
+        cleaned = price_str.replace("£", "").replace(",", "").strip()
+        return float(cleaned)
+    except (ValueError, AttributeError):
+        # Log or handle error appropriately
+        return 0.0  # or raise a custom error if you prefer
+
 def fetch_book(book_url: str):
     soup = get_soup(book_url)
 
@@ -68,11 +90,13 @@ def fetch_book(book_url: str):
     image_url = urljoin(book_url, img_rel)
 
     title = title.encode('utf-8', errors='replace').decode()
+    rating_num = rating_str_to_num(rating)
+    price_float = parse_price(price)
 
     return {
         "title": title,
-        "price": price,
-        "rating": rating,
+        "price": price_float,
+        "rating": rating_num,
         "availability": availability,
         "category": category,
         "image_url": image_url,

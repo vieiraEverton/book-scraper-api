@@ -2,6 +2,7 @@ from typing import Optional
 
 from fastapi import Depends
 from sqlmodel import Session, select, and_, func
+from sqlalchemy import cast, Float
 
 from api.db import get_session
 from api.models.book import Book
@@ -35,7 +36,9 @@ class BookService:
 
     def search_books(self,
                      title: Optional[str] = None,
-                     category: Optional[str] = None) -> list[Book]:
+                     category: Optional[str] = None,
+                     limit: int = 10,
+                     offset: int = 0) -> list[Book]:
         stmt = select(Book)
 
         filters = []
@@ -46,6 +49,38 @@ class BookService:
 
         if filters:
             stmt = stmt.where(and_(*filters))
+
+        stmt = stmt.offset(offset).limit(limit)
+
+        return self.session.exec(stmt).all()
+
+    def get_top_books(self, limit: int = 10, offset: int = 0) -> list[Book]:
+        stmt = (
+            select(Book)
+            .order_by(Book.rating.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return self.session.exec(stmt).all()
+
+    def filter_by_price_range(
+            self,
+            min_price: Optional[float] = None,
+            max_price: Optional[float] = None,
+            limit: int = 10, offset: int = 0
+    ) -> list[Book]:
+        stmt = select(Book)
+
+        filters = []
+        if min_price is not None:
+            filters.append(Book.price >= min_price)
+        if max_price is not None:
+            filters.append(Book.price <= max_price)
+
+        if filters:
+            stmt = stmt.where(and_(*filters))
+
+        stmt = stmt.offset(offset).limit(limit)
 
         return self.session.exec(stmt).all()
 
