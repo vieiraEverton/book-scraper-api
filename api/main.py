@@ -9,6 +9,7 @@ import structlog
 
 from api.config import settings
 from api.db import init_db, engine
+from api.metrics_store import metrics_lock, metrics
 from api.routers import books, auth, categories, scraping, stats
 from api.services.user_service import UserService
 from api.tasks import perform_scrape, perform_initial_scrape
@@ -104,6 +105,21 @@ async def log_requests(request: Request, call_next):
         status_code=response.status_code,
         duration_ms=round(duration * 1000, 2)
     )
+
+    return response
+
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+
+    with metrics_lock:
+        metrics["total_requests"] += 1
+        metrics["total_time"] += duration
+        path = request.url.path
+        metrics["per_path"][path]["count"] += 1
+        metrics["per_path"][path]["total_time"] += duration
 
     return response
 
