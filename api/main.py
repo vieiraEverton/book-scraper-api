@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+import time
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+import structlog
 
 from api.config import settings
 from api.db import init_db, engine
@@ -12,6 +14,7 @@ from api.services.user_service import UserService
 from api.tasks import perform_scrape, perform_initial_scrape
 
 scheduler = BackgroundScheduler(timezone="America/Sao_Paulo")
+logger = structlog.get_logger()
 
 def setup_database():
     print("Setting Up Database...")
@@ -86,6 +89,23 @@ app.include_router(categories.router, prefix="/api/v1/categories", tags=["Catego
 app.include_router(scraping.router, prefix="/api/v1/scraping", tags=["Scraping"])
 app.include_router(stats.router, prefix="/api/v1/stats", tags=["Stats"])
 app.include_router(auth.router)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+
+    response = await call_next(request)
+
+    duration = time.time() - start_time
+    logger.info(
+        "api_call",
+        method=request.method,
+        path=request.url.path,
+        status_code=response.status_code,
+        duration_ms=round(duration * 1000, 2)
+    )
+
+    return response
 
 # --- Healthcheck ---
 @app.get("/api/v1/health", tags=["Health"], status_code=200)
