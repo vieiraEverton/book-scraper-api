@@ -25,6 +25,7 @@ lxml = "^6.0.0"
 sklearn-utils = "^0.0.15"
 structlog = "^25.4.0"
 streamlit = "^1.47.1"
+psycopg2-binary = "^2.9.10"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
