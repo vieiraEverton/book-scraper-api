@@ -105,6 +105,11 @@ book-scraper-api/
    ```
    Authorization: Bearer <access_token>
    ```
+   
+## Rodando o Streamlit
+```commandline
+streamlit run streamlit/streamlit_dashboard.py
+```
 
 ## 📄 License
 
