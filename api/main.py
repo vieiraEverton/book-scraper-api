@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import settings
 from api.db import init_db, engine
-from api.routers import books, auth, categories, scraping
+from api.routers import books, auth, categories, scraping, ml
 from api.services.user_service import UserService
 from api.tasks import perform_scrape, perform_initial_scrape
 
@@ -85,6 +85,7 @@ app.include_router(books.router, prefix="/api/v1/books", tags=["Books"])
 app.include_router(categories.router, prefix="/api/v1/categories", tags=["Categories"])
 app.include_router(scraping.router, prefix="/api/v1/scraping", tags=["Scraping"])
 app.include_router(auth.router)
+app.include_router(ml.router, prefix="/api/v1/ml", tags=["ML"])
 
 # --- Healthcheck ---
 @app.get("/api/v1/health", tags=["Health"], status_code=200)
