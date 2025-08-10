@@ -40,7 +40,7 @@ class CategoryEncodings(BaseModel):
         description="Mapeamento {categoria: índice} para codificar category_encoded.",
         example={"Travel": 47, "Mystery": 26}
     )
-router = APIRouter(prefix="/api/v1/ml", tags=["ML"])
+router = APIRouter()
 
 @router.get(
     "/features",
