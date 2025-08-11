@@ -13,7 +13,7 @@ from api.db import engine
 from api.models.book import Book
 from api.services.ml_helpers import parse_price, parse_rating, parse_availability, encode_category
 
-MODEL_DIR = "models"
+MODEL_DIR = "/tmp/models"
 MODEL_PATH = os.path.join(MODEL_DIR, "logistic_model.joblib")
 
 def load_book_dataset() -> Bunch:
