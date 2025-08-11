@@ -1,8 +1,8 @@
-from typing import List, Dict
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session
 
 from api.db import get_session
+from api.schemas.ml import BatchRequest
 from api.security import get_current_user
 from api.services.ml_service import (
     get_category_mapping,
@@ -11,41 +11,12 @@ from api.services.ml_service import (
     get_feature_data,
     get_training_data,
 )
-from api.schemas.ml import BatchRequest
-from pydantic import BaseModel, Field
 
-
-
-class FeatureMatrix(BaseModel):
-    features: List[List[float]] = Field(
-        ...,
-        description="Matriz de features no formato [[price, rating, availability, category_encoded], ...]",
-        example={"features": [[45.17, 2, 19, 47], [49.43, 4, 15, 47]]},
-    )
-
-class TrainingData(BaseModel):
-    features: List[List[float]] = Field(
-        ...,
-        description="Matriz de features numéricas já pré-processadas."
-    )
-    labels: List[int] = Field(
-        ...,
-        description="Rótulos binários (0/1). Ex.: 1 se rating >= 4, senão 0.",
-        example={"labels": [0, 1, 0, 1]}
-    )
-
-class CategoryEncodings(BaseModel):
-    mapping: Dict[str, int] = Field(
-        ...,
-        description="Mapeamento {categoria: índice} para codificar category_encoded.",
-        example={"Travel": 47, "Mystery": 26}
-    )
 router = APIRouter()
 
 @router.get(
     "/features",
     summary="Obter somente as features numéricas",
-    response_model=FeatureMatrix,
     responses={200: {"description": "OK"}},
 )
 def get_features(
@@ -67,7 +38,6 @@ def get_features(
 @router.get(
     "/training-data",
     summary="Obter features + labels para treino",
-    response_model=TrainingData,
     responses={200: {"description": "OK"}},
 )
 def get_training(
@@ -84,7 +54,6 @@ def get_training(
 @router.post(
     "/predictions",
     summary="Obter predições do modelo treinado",
-    response_model=List[int],
     responses={
         200: {"description": "Lista de predições (0/1) na mesma ordem do batch"},
         500: {"description": "Erro interno ao executar a predição"},
@@ -142,8 +111,7 @@ def train_logistic(
 
 @router.get(
     "/category-encodings",
-    summary="Mapeamento de categorias para índices",
-    response_model=CategoryEncodings,
+    summary="Mapeamento de categorias para índices"
 )
 def get_category_encodings(
     session: Session = Depends(get_session),
