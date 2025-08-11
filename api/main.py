@@ -1,8 +1,9 @@
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import time
 
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import structlog
@@ -14,7 +15,7 @@ from api.routers import books, auth, categories, scraping, stats, ml
 from api.services.user_service import UserService
 from api.tasks import perform_scrape, perform_initial_scrape
 
-scheduler = BackgroundScheduler(timezone="America/Sao_Paulo")
+scheduler = AsyncIOScheduler(timezone="UTC")
 logger = structlog.get_logger()
 
 def setup_database():
@@ -40,9 +41,10 @@ def setup_scheduler():
     scheduler.add_job(
         perform_initial_scrape,
         trigger="date",
-        run_date=datetime.now() + timedelta(seconds=5),  # This extra seconds was necessary in order to run it on docker
+        run_date=datetime.now(timezone.utc) + timedelta(seconds=10),
         id="initial_scrape",
-        replace_existing=True
+        replace_existing=True,
+        misfire_grace_time=300,
     )
 
     scheduler.add_job(
@@ -50,7 +52,9 @@ def setup_scheduler():
         trigger="interval",
         hours=1,
         id="scrape_job",
-        replace_existing=True
+        replace_existing=True,
+        misfire_grace_time=600,
+        next_run_time=datetime.now(timezone.utc) + timedelta(minutes=5),
     )
     scheduler.start()
 
