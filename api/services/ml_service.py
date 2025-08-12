@@ -126,6 +126,9 @@ def predict_logistic(batch: List[List[float]]) -> List[int]:
     # 5. Fazer predição
     predictions = model.predict(X)
 
+    # 6. Retornar como lista Python
+    return predictions.tolist()
+
 
 def get_category_mapping(session: Session) -> dict[str, int]:
     stmt = select(Book.category).distinct()
